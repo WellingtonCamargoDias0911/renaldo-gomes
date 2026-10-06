@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect } from 'react'
 import capa from '../assets/img/capa.webp'
-import { BOOK, brl } from '../config'
+import { BOOK, HAS_PRICE, brl } from '../config'
 import { buildCheckoutUrl, track } from '../lib/tracking'
 import { useCart } from '../cart/CartContext'
 
@@ -52,19 +52,25 @@ export function CartDrawer() {
                         <span aria-live="polite">{qty}</span>
                         <button onClick={() => setQty(qty + 1)} aria-label="Aumentar" disabled={qty >= 10}>+</button>
                       </div>
-                      <strong>{brl(subtotal)}</strong>
+                      {HAS_PRICE && <strong>{brl(subtotal)}</strong>}
                     </div>
                     <button className="link-btn" onClick={clear}>Remover</button>
                   </div>
                 </motion.div>
 
                 <footer className="drawer__foot">
-                  <div className="sum"><span>Subtotal</span><strong>{brl(subtotal)}</strong></div>
-                  <p className="sum__note">Frete e prazo de entrega são informados na etapa seguinte.</p>
+                  {HAS_PRICE ? (
+                    <>
+                      <div className="sum"><span>Subtotal</span><strong>{brl(subtotal)}</strong></div>
+                      <p className="sum__note">Frete e prazo de entrega são informados na etapa seguinte.</p>
+                    </>
+                  ) : (
+                    <p className="sum__note">Valor, frete e prazo de entrega são informados na etapa seguinte.</p>
+                  )}
                   <a
                     className="btn btn--green btn--lg"
                     href={buildCheckoutUrl()}
-                    onClick={() => track('InitiateCheckout', { value: subtotal / 100, quantity: qty })}
+                    onClick={() => track('InitiateCheckout', { value: HAS_PRICE ? subtotal / 100 : undefined, quantity: qty })}
                   >
                     Finalizar compra
                   </a>

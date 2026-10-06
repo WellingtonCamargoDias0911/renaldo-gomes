@@ -1,7 +1,7 @@
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { useState } from 'react'
 import capa from '../assets/img/capa.webp'
-import { BOOK, brl } from '../config'
+import { BOOK, HAS_PRICE, brl } from '../config'
 import { useCart } from '../cart/CartContext'
 import { shareUrl, track } from '../lib/tracking'
 import { NetworkBg } from './NetworkBg'
@@ -60,10 +60,12 @@ ${url}`)}`, '_blank', 'noopener')
           <Reveal as="h2" className="h2" delay={0.05}>{BOOK.title}, <span className="gold">{BOOK.subtitle}</span></Reveal>
           <Reveal as="p" className="offer__by" delay={0.1}>Por {BOOK.author} · O método que transformou a vida de mais de 2.000 famílias.</Reveal>
 
-          <Reveal delay={0.15} className="offer__price">
-            {BOOK.fullPriceCents > 0 && <s>{brl(BOOK.fullPriceCents)}</s>}
-            <strong>{brl(BOOK.priceCents)}</strong>
-          </Reveal>
+          {HAS_PRICE && (
+            <Reveal delay={0.15} className="offer__price">
+              {BOOK.fullPriceCents > 0 && <s>{brl(BOOK.fullPriceCents)}</s>}
+              <strong>{brl(BOOK.priceCents)}</strong>
+            </Reveal>
+          )}
 
           <Reveal delay={0.2}>
             <ul className="checks">
@@ -80,7 +82,7 @@ ${url}`)}`, '_blank', 'noopener')
               <button onClick={() => setN((v) => Math.min(10, v + 1))} aria-label="Aumentar">+</button>
             </div>
             <button className="btn btn--gold btn--lg btn--grow" onClick={() => { add(n); setN(1) }}>
-              Adicionar ao carrinho · {brl(BOOK.priceCents * n)}
+              Adicionar ao carrinho{HAS_PRICE ? ` · ${brl(BOOK.priceCents * n)}` : ''}
             </button>
           </Reveal>
 

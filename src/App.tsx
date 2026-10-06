@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { CartProvider } from './cart/CartContext'
-import { BOOK } from './config'
+import { BOOK, HAS_PRICE } from './config'
 import { captureAttribution, track } from './lib/tracking'
 import { Consent } from './components/Consent'
 import { Header } from './components/Header'
@@ -16,7 +16,7 @@ import { ScrollProgress, StickyCta } from './components/Chrome'
 export default function App() {
   useEffect(() => {
     captureAttribution()
-    track('ViewContent', { value: BOOK.priceCents / 100, quantity: 1 })
+    track('ViewContent', { value: HAS_PRICE ? BOOK.priceCents / 100 : undefined, quantity: 1 })
 
     // profundidade de rolagem: 25/50/75/100%
     const hit = new Set<number>()

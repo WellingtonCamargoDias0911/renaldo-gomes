@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { BOOK, brl } from '../config'
+import { BOOK, HAS_PRICE, brl } from '../config'
 import { useCart } from '../cart/CartContext'
 
 export function ScrollProgress() {
@@ -29,7 +29,7 @@ export function StickyCta() {
     <AnimatePresence>
       {show && (
         <motion.div className="sticky" initial={{ y: 90 }} animate={{ y: 0 }} exit={{ y: 90 }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
-          <div className="sticky__price"><span>{BOOK.author}</span><strong>{brl(BOOK.priceCents)}</strong></div>
+          <div className="sticky__price"><span>{BOOK.author}</span><strong>{HAS_PRICE ? brl(BOOK.priceCents) : 'O livro'}</strong></div>
           <button className="btn btn--gold" onClick={() => (qty > 0 ? openCart() : add(1))}>
             {qty > 0 ? `Ver carrinho (${qty})` : 'Comprar agora'}
           </button>

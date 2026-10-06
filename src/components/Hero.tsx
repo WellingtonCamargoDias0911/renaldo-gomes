@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import montanha from '../assets/img/montanha.webp'
 import homem from '../assets/img/homem.webp'
 import { PEAK, RIDGE_PATH, RIDGE_VIEWBOX } from '../data/ridge'
-import { BOOK, brl } from '../config'
+import { BOOK, HAS_PRICE, brl } from '../config'
 import { useCart } from '../cart/CartContext'
 import { useIsDesktop } from '../hooks/useMediaQuery'
 import { HeroAtmosphere } from './HeroAtmosphere'
@@ -128,10 +128,12 @@ export function Hero() {
       </div>
 
       <motion.div className="hero__cta" {...fade(0.25)}>
-        <div className="hero__price">
-          <span>Por apenas</span>
-          <strong>{brl(BOOK.priceCents)}</strong>
-        </div>
+        {HAS_PRICE && (
+          <div className="hero__price">
+            <span>Por apenas</span>
+            <strong>{brl(BOOK.priceCents)}</strong>
+          </div>
+        )}
         <button className="btn btn--gold btn--lg" onClick={() => add(1)}>
           <span>Quero meu exemplar</span>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>

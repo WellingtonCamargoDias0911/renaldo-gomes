@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
-import { BOOK } from '../config'
+import { BOOK, HAS_PRICE } from '../config'
 import { track } from '../lib/tracking'
 
 interface State { qty: number }
@@ -49,7 +49,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [state])
 
   const add = useCallback((n = 1) => {
-    track('AddToCart', { value: (n * BOOK.priceCents) / 100, quantity: n })
+    track('AddToCart', { value: HAS_PRICE ? (n * BOOK.priceCents) / 100 : undefined, quantity: n })
     dispatch({ type: 'add', n })
     setBump((b) => b + 1)
     setOpen(true)

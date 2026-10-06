@@ -51,14 +51,16 @@ export function seo(): Plugin {
             isbn: '9786502110300',
             author: { '@id': `${site}/#autor` },
             url: `${site}/`,
-            offers: {
-              '@type': 'Offer',
-              url: `${site}/#comprar`,
-              price,
-              priceCurrency: 'BRL',
-              availability: 'https://schema.org/InStock',
-              itemCondition: 'https://schema.org/NewCondition',
-            },
+            ...(BOOK.priceCents > 0 && {
+              offers: {
+                '@type': 'Offer',
+                url: `${site}/#comprar`,
+                price,
+                priceCurrency: 'BRL',
+                availability: 'https://schema.org/InStock',
+                itemCondition: 'https://schema.org/NewCondition',
+              },
+            }),
           },
           {
             '@type': 'FAQPage',
@@ -82,7 +84,7 @@ export function seo(): Plugin {
           <li>Método ODS: Objetivo Claro, Disciplina e Saber Investir.</li>
           <li>Por ${esc(BOOK.author)}, sócio fundador da Grafo Capital.</li>
         </ul>
-        <p><a style="color:#e0b04a" href="${CHECKOUT_URL}">Comprar o livro — R$ ${price.replace('.', ',')}</a></p>
+        <p><a style="color:#e0b04a" href="${CHECKOUT_URL}">Comprar o livro${BOOK.priceCents > 0 ? ` — R$ ${price.replace('.', ',')}` : ''}</a></p>
         <p style="font-size:.8em;opacity:.7">Esta página usa JavaScript para exibir o conteúdo completo.</p>
       </main>
     </noscript>`
