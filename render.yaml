@@ -1,0 +1,42 @@
+# Blueprint do Render — Static Site (CDN global, HTTPS e domínio próprio gratuitos)
+# Render > New > Blueprint > aponte para o repositório. O Render lê este arquivo.
+services:
+  - type: web
+    runtime: static
+    name: livro-renaldo-gomes
+    buildCommand: npm ci --include=dev && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      # TROQUE pelo domínio final (sem barra no fim). Alimenta canonical, WhatsApp/OG, sitemap e JSON-LD.
+      - key: VITE_SITE_URL
+        value: https://livro-renaldo-gomes.onrender.com
+      # Opcionais — preencha para ativar o rastreamento (carrega só após o visitante aceitar cookies)
+      - key: VITE_GTM_ID
+        sync: false
+      - key: VITE_GA4_ID
+        sync: false
+      - key: VITE_META_PIXEL_ID
+        sync: false
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
