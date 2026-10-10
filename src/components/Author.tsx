@@ -26,7 +26,7 @@ export function Author() {
             {BIO.map((b, i) => <Reveal as="li" key={i} delay={0.06 * i} y={14}>{b}</Reveal>)}
           </ul>
           <Reveal delay={0.1}>
-            <a className="btn btn--ghost" href={AUTHOR_INSTAGRAM} target="_blank" rel="noreferrer">Fale com o autor · @renaldogomes</a>
+            <a className="btn btn--ghost" href={AUTHOR_INSTAGRAM} target="_blank" rel="noreferrer">Fale com o autor · @renaldogomes_1</a>
           </Reveal>
         </div>
       </div>

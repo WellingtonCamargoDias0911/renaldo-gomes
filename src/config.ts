@@ -14,7 +14,7 @@ export const BOOK = {
 export const CHECKOUT_URL =
   'https://hub.grafocapital.com.br/checkout/76f35dbd-972e-4136-916f-52fd56b1a68b'
 
-export const AUTHOR_INSTAGRAM = 'https://instagram.com/renaldogomes'
+export const AUTHOR_INSTAGRAM = 'https://www.instagram.com/renaldogomes_1'
 
 /** Há preço configurado? Controla tudo que exibe ou envia valores. */
 export const HAS_PRICE = BOOK.priceCents > 0
