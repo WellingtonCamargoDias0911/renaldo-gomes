@@ -98,7 +98,8 @@ export function seo(): Plugin {
       this.emitFile({
         type: 'asset',
         fileName: 'robots.txt',
-        source: `User-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\n`,
+        // /convidados é uma página privada de convite (link direto, não para busca)
+        source: `User-agent: *\nAllow: /\nDisallow: /convidados\n\nSitemap: ${site}/sitemap.xml\n`,
       })
       this.emitFile({
         type: 'asset',

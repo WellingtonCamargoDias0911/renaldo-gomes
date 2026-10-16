@@ -260,6 +260,48 @@ h1, h2, h3, p { margin: 0; }
 .skip { position: absolute; left: 12px; top: -60px; z-index: 200; padding: 10px 16px; border-radius: 10px; background: var(--gold2); color: #1a1204; font-weight: 700; transition: top 0.2s; }
 .skip:focus { top: 12px; }
 
+/* ---------- convite (RSVP) ---------- */
+.invite__back { font-size: 0.74rem; white-space: nowrap; color: var(--muted); border: 1px solid var(--line); padding: 7px 12px; border-radius: 99px; transition: border-color 0.3s, color 0.3s; }
+.invite__back:hover { color: var(--gold1); border-color: rgba(224, 176, 74, 0.5); }
+
+.invite__hero { position: relative; overflow: hidden; padding: 128px 0 56px; background: var(--bg); }
+.invite__bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 78% 18%; opacity: 0.55; }
+.invite__scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6, 7, 12, 0.55) 0%, rgba(6, 7, 12, 0.78) 55%, var(--bg) 100%); }
+.invite__hero-in { position: relative; z-index: 2; display: grid; justify-items: center; gap: 14px; text-align: center; }
+.invite__title { max-width: 16em; }
+.invite__subtitle { color: var(--muted); max-width: 32em; }
+.invite__details { display: grid; gap: 10px; margin-top: 10px; justify-items: center; }
+.invite__detail { display: flex; align-items: center; gap: 10px; color: #d8dbe6; font-size: 0.95rem; }
+.invite__detail svg { flex: none; color: var(--gold2); }
+.invite__detail a { color: var(--gold1); text-decoration: underline; text-underline-offset: 3px; }
+.invite__count { margin-top: 12px; padding: 8px 18px; border-radius: 99px; border: 1px solid rgba(224, 176, 74, 0.35); background: rgba(224, 176, 74, 0.08); font-size: 0.86rem; color: var(--muted); }
+.invite__count strong { color: var(--gold1); font: 800 1rem/1 var(--head); }
+
+.invite__form-section { padding-top: 0; }
+.invite__card { padding: 30px 24px; border-radius: 26px; border: 1px solid var(--line); background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)); backdrop-filter: blur(6px); }
+.invite__form { display: grid; gap: 16px; }
+.invite__form-title { font-size: clamp(1.4rem, 5vw, 1.8rem); }
+.invite__form-sub { color: var(--muted); font-size: 0.92rem; margin-top: -8px; }
+.invite__form .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.field { display: grid; gap: 7px; font-size: 0.85rem; color: var(--muted); }
+.field input {
+  padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03);
+  color: var(--text); font: 500 1rem/1.3 var(--body); transition: border-color 0.25s, background 0.25s;
+}
+.field input::placeholder { color: #5c6178; }
+.field input:focus { outline: none; border-color: var(--gold2); background: rgba(224, 176, 74, 0.05); }
+.field input[aria-invalid='true'] { border-color: #e25c5c; }
+.field small { color: #f09a9a; font-size: 0.78rem; }
+
+.invite__warn { padding: 12px 14px; border-radius: 12px; background: rgba(226, 92, 92, 0.1); border: 1px solid rgba(226, 92, 92, 0.3); color: #f2b5b5; font-size: 0.85rem; }
+.invite__warn code { color: #fff; }
+.invite__warn a { color: #fff; text-decoration: underline; }
+
+.invite__success { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 12px 0; }
+.invite__success-title { font-size: clamp(1.4rem, 5vw, 1.9rem); }
+.invite__success p { color: var(--muted); max-width: 32em; }
+
 /* ---------- tablet+ ---------- */
 @media (min-width: 640px) {
   :root { --gutter: 32px; }
@@ -275,6 +317,7 @@ h1, h2, h3, p { margin: 0; }
   .thesis { padding-bottom: 0; }
   .header__in { height: 76px; }
   .logo__text { font-size: 1.45rem; }
+  .invite__back { font-size: 0.85rem; padding: 9px 16px; }
   .nav { display: flex; gap: 34px; }
   .nav a { font: 500 0.88rem/1 var(--head); color: var(--muted); position: relative; padding: 6px 0; transition: color 0.3s; }
   .nav a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--gold2); transform: scaleX(0); transform-origin: left; transition: transform 0.4s var(--ease); }
@@ -308,6 +351,9 @@ h1, h2, h3, p { margin: 0; }
   .book3d__obj { width: min(78%, 360px); }
   .sticky { display: none; }
   .footer { padding-bottom: 56px; }
+
+  .invite__hero { padding: 168px 0 90px; }
+  .invite__card { padding: 44px; }
 }
 
 @media (min-width: 1280px) {

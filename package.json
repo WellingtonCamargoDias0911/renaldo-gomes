@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "assets": "node scripts/build-assets.mjs",
-    "og": "node scripts/build-og.mjs"
+    "og": "node scripts/build-og.mjs",
+    "og:convidados": "node scripts/build-og-convidados.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

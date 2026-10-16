@@ -7,7 +7,7 @@ interface RevealProps {
   y?: number
   x?: number
   className?: string
-  as?: 'div' | 'li' | 'section' | 'p' | 'h2' | 'h3'
+  as?: 'div' | 'li' | 'section' | 'p' | 'h1' | 'h2' | 'h3'
 }
 
 export function Reveal({ children, delay = 0, y = 28, x = 0, className, as = 'div' }: RevealProps) {
