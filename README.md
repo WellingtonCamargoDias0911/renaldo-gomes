@@ -23,25 +23,25 @@ npm run preview  # testa o build localmente
 - [ ] Rastreamento: preencha `VITE_GTM_ID` **ou** `VITE_GA4_ID`, e `VITE_META_PIXEL_ID` (opcional). Só carregam depois que o visitante aceita o aviso de cookies (LGPD).
 - [ ] Google Search Console: adicione o site e envie `/sitemap.xml`.
 - [ ] Teste o cartão de compartilhamento: <https://developers.facebook.com/tools/debug/> (também limpa o cache do WhatsApp).
-- [ ] Se for usar `/convidados`: suba o endpoint (seção abaixo), preencha `VITE_RSVP_ENDPOINT` e `src/data/event.ts`.
+- [ ] Se for usar `/convidados`: confirme `VITE_RSVP_ENDPOINT` (seção abaixo) e preencha `src/data/event.ts`.
 
 ## Lista de convidados (RSVP) — `/convidados`
 
 Página separada (mesmo tema e efeitos do site) com um formulário de **nome + WhatsApp**
-para confirmar presença no lançamento. O site continua sendo só HTML/JS/CSS (sem backend
-próprio) — ao confirmar, o navegador da pessoa faz uma requisição HTTP direto para o
-**seu servidor** (o mesmo domínio que já recebe a compra do livro, `hub.grafocapital.com.br`,
-ou qualquer outro que vocês controlem). É lá que a lista fica guardada e é lá que vocês
-contam quantas pessoas confirmaram — este README descreve exatamente o que o site envia,
-para o time implementar o endpoint que recebe.
+para confirmar presença no lançamento. Ao confirmar, o navegador da pessoa envia os dados
+direto para o webhook **"Receber convidados da landing page"** do ERP da Grafo Capital — o
+mesmo sistema que já recebe a compra do livro. É lá que a lista fica guardada e é lá que
+vocês acompanham quem confirmou (o próprio webhook já evita duplicata pelo telefone).
 
 ### O que o site envia
-**`POST` para a URL em `VITE_RSVP_ENDPOINT`**, corpo em JSON:
+**`POST` para `VITE_RSVP_ENDPOINT`**, corpo em JSON:
 
 ```json
 {
+  "nome": "Maria Silva",
+  "telefone": "41988887777",
   "name": "Maria Silva",
-  "phone": "41988887777",
+  "whatsapp": "41988887777",
   "event": "Lançamento do livro",
   "confirmedAt": "2026-10-16T22:14:03.000Z",
   "source": "landing-convidados",
@@ -49,55 +49,34 @@ para o time implementar o endpoint que recebe.
 }
 ```
 
-- `phone` já vem só com dígitos (DDD + número, sem máscara).
-- `confirmedAt` é a data/hora UTC do envio, em ISO 8601.
-- `utm` traz a origem de quem clicou no link (campanha, rede social etc.) quando existir —
-  pode vir como objeto vazio `{}`.
-- O cabeçalho vai como `Content-Type: text/plain` **de propósito**, mesmo o corpo sendo
-  JSON — isso faz o navegador pular o preflight (`OPTIONS`) do CORS, então o servidor só
-  precisa tratar o `POST` em si. Ele pode (e deve) ignorar o Content-Type declarado e fazer
-  `JSON.parse`/`json_decode` do corpo normalmente.
+`nome`/`telefone` (e os apelidos `name`/`whatsapp`, que o webhook também aceita) são os
+campos obrigatórios; `telefone`/`whatsapp` já vêm só com dígitos (DDD + número, sem
+máscara). Os demais campos (`event`, `confirmedAt`, `utm`...) são contexto extra — se o
+webhook não usar, ele simplesmente ignora.
 
-### O que o servidor precisa devolver
-- **Sucesso:** qualquer status **2xx** (o corpo da resposta não é lido, pode ser vazio).
-- **Falha:** qualquer outro status — a página mostra um aviso de erro para quem está
-  confirmando.
-- **CORS, obrigatório:** a resposta precisa incluir o cabeçalho
-  `Access-Control-Allow-Origin: https://SEU-SITE` (o domínio deste site; `*` também funciona,
-  mas é menos seguro). Sem esse cabeçalho, o navegador descarta a resposta mesmo que o
-  servidor tenha salvo os dados — e a página mostraria erro mesmo com tudo certo do lado de
-  lá. Como não há preflight (ver acima), **esse é o único cabeçalho de CORS necessário.**
-
-### Exemplo mínimo de servidor
-Node/Express:
-```js
-app.post('/rsvp', express.text({ type: '*/*' }), (req, res) => {
-  const data = JSON.parse(req.body) // { name, phone, event, confirmedAt, source, utm }
-  // ... salvar `data` onde preferir (banco, planilha, CRM) ...
-  res.header('Access-Control-Allow-Origin', 'https://SEU-SITE').sendStatus(200)
-})
-```
-PHP:
-```php
-header('Access-Control-Allow-Origin: https://SEU-SITE');
-$data = json_decode(file_get_contents('php://input'), true); // name, phone, event, confirmedAt, source, utm
-// ... salvar $data ...
-http_response_code(200);
-```
+### Experiência sem erro para quem confirma (pedido explícito)
+A pessoa confirmando **nunca vê uma mensagem de erro técnico**. A tela de "Presença
+confirmada!" aparece assim que o nome e o WhatsApp passam na validação do formulário; o
+envio de verdade roda em segundo plano (`src/lib/rsvp.ts`):
+1. Até duas tentativas automáticas (8s e 15s de tolerância — cobre o backend "acordando"
+   no Render, que pode demorar no primeiro acesso).
+2. Se as duas falharem (backend fora do ar, sem internet etc.), o envio fica guardado no
+   navegador da pessoa e é reenviado sozinho, em silêncio, da próxima vez que ela abrir
+   `/convidados` — sem perder o dado e sem incomodar ninguém.
+3. Qualquer falha só aparece no console do navegador (`[rsvp] ...`), para quem for depurar.
 
 ### (Opcional) Mostrar "X confirmados" na página
-Se o servidor também expuser um **`GET`** que devolva `{"count": 42}` (com o mesmo cabeçalho
-de CORS acima), preencha a URL dele em `VITE_GUEST_COUNT_URL` e o contador aparece sozinho
-na página. Sem essa variável, o contador simplesmente não aparece — o resto funciona normal.
+Se o backend também expuser um **`GET`** que devolva `{"count": 42}` (com CORS liberado
+para este domínio), preencha a URL dele em `VITE_GUEST_COUNT_URL` e o contador aparece
+sozinho na página. Sem essa variável, o contador simplesmente não aparece — o resto
+funciona normal.
 
 ### Limitações (honestas)
-- Não há deduplicação automática: se alguém confirmar duas vezes, vão existir dois envios —
-  trate isso do lado do servidor se for importante (ex.: por telefone).
+- A deduplicação é a do próprio webhook (por telefone) — a página não impede que a mesma
+  pessoa envie de dois aparelhos diferentes, por exemplo.
 - A página guarda no navegador da pessoa que ela já confirmou (não é à prova de reinstalar
-  o navegador/trocar de aparelho), só para evitar reenvio sem querer ao voltar na página.
-- Se o envio falhar (servidor fora do ar, CORS mal configurado etc.), a página avisa e,
-  se você preencher `EVENT.contactWhatsapp` em `src/data/event.ts`, oferece confirmar direto
-  pelo seu WhatsApp como alternativa.
+  o navegador/trocar de aparelho), só para pré-preencher o formulário e evitar reenvio sem
+  querer ao voltar na página.
 - `/convidados` é marcada como privada (`noindex`, fora do `sitemap.xml`): só quem recebe
   o link direto acessa; não aparece em busca do Google.
 

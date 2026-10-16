@@ -10,11 +10,11 @@ import { BOOK } from '../config'
 import { EVENT, HAS_VENUE, formatEventDate, googleCalendarUrl } from '../data/event'
 import { captureAttribution, track } from '../lib/tracking'
 import {
-  fetchGuestCount, formatPhone, getSavedRsvp, hasRsvpBackend,
+  fetchGuestCount, flushRsvpOutbox, formatPhone, getSavedRsvp, hasRsvpBackend,
   isValidName, isValidPhone, submitRsvp,
 } from '../lib/rsvp'
 
-type Status = 'idle' | 'sending' | 'ok' | 'error'
+type Status = 'idle' | 'sending' | 'ok'
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -51,6 +51,7 @@ export function GuestsPage() {
     captureAttribution()
     track('ViewInvite')
     fetchGuestCount().then(setCount)
+    void flushRsvpOutbox() // reenvia em silêncio qualquer confirmação pendente de uma visita anterior
   }, [])
 
   const nameOk = isValidName(name)
@@ -61,14 +62,10 @@ export function GuestsPage() {
     setTouched(true)
     if (!nameOk || !phoneOk || status === 'sending' || !hasRsvpBackend) return
     setStatus('sending')
-    const r = await submitRsvp(name, phone)
-    if (r === 'ok') {
-      track('RSVP', { quantity: 1 })
-      setCount((c) => (c === null ? c : c + 1))
-      setStatus('ok')
-    } else {
-      setStatus('error')
-    }
+    await submitRsvp(name, phone)
+    track('RSVP', { quantity: 1 })
+    setCount((c) => (c === null ? c : c + 1))
+    setStatus('ok')
   }
 
   const calUrl = googleCalendarUrl()
@@ -178,19 +175,6 @@ export function GuestsPage() {
                     {!hasRsvpBackend && (
                       <p className="invite__warn">
                         Formulário ainda não conectado. Veja <code>README.md</code> → "Lista de convidados".
-                      </p>
-                    )}
-                    {status === 'error' && (
-                      <p className="invite__warn">
-                        Não foi possível enviar agora.{' '}
-                        {EVENT.contactWhatsapp ? (
-                          <a
-                            href={`https://wa.me/${EVENT.contactWhatsapp}?text=${encodeURIComponent(`Olá! Quero confirmar presença no lançamento: ${name}`)}`}
-                            target="_blank" rel="noreferrer"
-                          >
-                            Confirme pelo WhatsApp
-                          </a>
-                        ) : 'Tente novamente em instantes.'}
                       </p>
                     )}
 

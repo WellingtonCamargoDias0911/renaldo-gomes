@@ -20,9 +20,10 @@ services:
         sync: false
       - key: VITE_META_PIXEL_ID
         sync: false
-      # Lista de convidados (/convidados) — veja README.md → "Lista de convidados (RSVP)"
+      # Lista de convidados (/convidados) — webhook do ERP da Grafo Capital.
+      # Veja README.md → "Lista de convidados (RSVP)"
       - key: VITE_RSVP_ENDPOINT
-        sync: false
+        value: https://sistemaerp-backend-f55o.onrender.com/api/marketing/webhook/48ada924-d390-448b-8147-1f1e575807ec/
       - key: VITE_GUEST_COUNT_URL
         sync: false
     headers:
