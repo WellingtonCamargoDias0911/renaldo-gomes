@@ -1,28 +1,29 @@
 /**
- * Confirmação de presença (RSVP) — sem backend próprio: os dados vão direto para um
- * Google Forms que você cria e controla. As respostas (nome, WhatsApp, data/hora) ficam
- * na aba "Respostas" do formulário — com contagem automática — e numa planilha do Google
- * Sheets ligada a ele. É ali que você acompanha quantas pessoas confirmaram.
+ * Confirmação de presença (RSVP) — envia os dados para o SEU PRÓPRIO servidor (o mesmo
+ * domínio que já recebe a compra do livro), via uma requisição HTTP comum.
  *
- * Passo a passo completo: README.md → "Lista de convidados (RSVP)".
+ * Contrato completo (exemplo de payload, resposta esperada, CORS): README.md →
+ * "Lista de convidados (RSVP)". Resumo rápido:
+ *   - POST para VITE_RSVP_ENDPOINT, corpo em JSON (veja `buildPayload`).
+ *   - Sucesso: qualquer resposta 2xx. Qualquer outra coisa é tratada como falha.
+ *   - O servidor precisa devolver o cabeçalho `Access-Control-Allow-Origin` liberando
+ *     o domínio deste site (CORS) — sem isso o navegador bloqueia a resposta.
  *
  * Configure em .env / variáveis do Render:
- *   VITE_GFORM_ID             — o trecho /d/e/XXXX/ do link do seu Google Forms
- *   VITE_GFORM_ENTRY_NAME     — o "entry.123456" do campo Nome completo
- *   VITE_GFORM_ENTRY_PHONE    — o "entry.123456" do campo WhatsApp
- *   VITE_GUEST_COUNT_CSV_URL  — (opcional) planilha publicada como CSV, para mostrar
- *                               "X confirmados" na própria página
+ *   VITE_RSVP_ENDPOINT    — URL completa do endpoint que recebe a confirmação (POST)
+ *   VITE_GUEST_COUNT_URL  — (opcional) URL que devolve {"count": N}, para mostrar
+ *                           "X confirmados" na própria página
  */
+import { attribution } from './tracking'
+import { EVENT } from '../data/event'
 
 const env = import.meta.env
 
-const GFORM_ID = (env.VITE_GFORM_ID as string | undefined) || ''
-const ENTRY_NAME = (env.VITE_GFORM_ENTRY_NAME as string | undefined) || ''
-const ENTRY_PHONE = (env.VITE_GFORM_ENTRY_PHONE as string | undefined) || ''
-const COUNT_CSV_URL = (env.VITE_GUEST_COUNT_CSV_URL as string | undefined) || ''
+const RSVP_ENDPOINT = (env.VITE_RSVP_ENDPOINT as string | undefined) || ''
+const COUNT_URL = (env.VITE_GUEST_COUNT_URL as string | undefined) || ''
 
-/** Formulário configurado? Enquanto não estiver, o botão de confirmar fica desativado. */
-export const hasRsvpBackend = !!(GFORM_ID && ENTRY_NAME && ENTRY_PHONE)
+/** Endpoint configurado? Enquanto não estiver, o botão de confirmar fica desativado. */
+export const hasRsvpBackend = /^https?:\/\//.test(RSVP_ENDPOINT)
 
 const STORE = 'rg-rsvp-v1'
 
@@ -52,45 +53,57 @@ export function formatPhone(raw: string): string {
 export const isValidName = (v: string) => v.trim().length >= 3 && v.trim().includes(' ')
 export const isValidPhone = (v: string) => onlyDigits(v).length >= 10
 
-type SubmitResult = 'ok' | 'offline'
+type SubmitResult = 'ok' | 'error'
+
+/** Monta exatamente o corpo que é enviado — use isto como referência ao implementar o servidor. */
+export function buildRsvpPayload(name: string, phone: string) {
+  return {
+    name: name.trim(),
+    phone: onlyDigits(phone),
+    event: EVENT.name,
+    confirmedAt: new Date().toISOString(),
+    source: 'landing-convidados',
+    utm: attribution(), // ex.: { utm_source: 'whatsapp', utm_medium: 'share' } — pode vir {}
+  }
+}
 
 /**
- * Envia a confirmação para o Google Forms. Por limitação do navegador (a requisição é
- * entre sites diferentes, sem CORS), não é possível ler de volta a resposta do Google —
- * então "ok" aqui significa que o envio saiu do navegador sem erro de rede, não uma
- * confirmação explícita do Google de que a linha foi gravada. Na prática é bem confiável;
- * "offline" só acontece se a requisição nem sair (sem internet, DNS bloqueado etc.).
+ * Envia a confirmação para o servidor configurado em VITE_RSVP_ENDPOINT.
+ *
+ * O Content-Type vai como "text/plain" de propósito, mesmo o corpo sendo JSON: isso faz o
+ * navegador tratar a requisição como "simples" e pular o preflight (OPTIONS) do CORS — o
+ * servidor só precisa aceitar o POST, fazer JSON.parse do corpo e devolver o cabeçalho
+ * Access-Control-Allow-Origin. Veja o contrato completo no README.
  */
 export async function submitRsvp(name: string, phone: string): Promise<SubmitResult> {
-  const trimmedName = name.trim()
-  const digits = onlyDigits(phone)
-  const body = new URLSearchParams({ [ENTRY_NAME]: trimmedName, [ENTRY_PHONE]: digits })
+  const payload = buildRsvpPayload(name, phone)
+  let res: Response
   try {
-    // Sem header de Content-Type manual: o fetch já define
-    // "application/x-www-form-urlencoded;charset=UTF-8" sozinho ao ver um URLSearchParams
-    // como body — exatamente como um <form> comum faria. Definir o header na mão aqui fazia
-    // o Google aceitar a requisição (criava a linha) mas descartar os valores dos campos.
-    await fetch(`https://docs.google.com/forms/d/e/${GFORM_ID}/formResponse`, {
+    res = await fetch(RSVP_ENDPOINT, {
       method: 'POST',
-      mode: 'no-cors',
-      body,
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(payload),
     })
-  } catch {
-    return 'offline'
+  } catch (err) {
+    console.error('[rsvp] falha de rede ao enviar a confirmação', err)
+    return 'error'
   }
-  saveRsvp({ name: trimmedName, phone: digits, ts: Date.now() })
+  if (!res.ok) {
+    console.error('[rsvp] servidor recusou a confirmação', res.status, await res.text().catch(() => ''))
+    return 'error'
+  }
+  saveRsvp({ name: payload.name, phone: payload.phone, ts: Date.now() })
   return 'ok'
 }
 
-/** Lê o total de confirmados numa planilha do Google publicada como CSV (ver README). */
+/** Lê o total de confirmados no endpoint opcional VITE_GUEST_COUNT_URL (ver README). */
 export async function fetchGuestCount(): Promise<number | null> {
-  if (!COUNT_CSV_URL) return null
+  if (!COUNT_URL) return null
   try {
-    const res = await fetch(COUNT_CSV_URL, { cache: 'no-store' })
+    const res = await fetch(COUNT_URL, { cache: 'no-store' })
     if (!res.ok) return null
-    const text = await res.text()
-    const rows = text.trim().split('\n').filter(Boolean)
-    return Math.max(0, rows.length - 1) // desconta a linha de cabeçalho
+    const data = (await res.json()) as { count?: number }
+    return typeof data.count === 'number' ? data.count : null
   } catch {
     return null
   }

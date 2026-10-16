@@ -21,13 +21,9 @@ services:
       - key: VITE_META_PIXEL_ID
         sync: false
       # Lista de convidados (/convidados) — veja README.md → "Lista de convidados (RSVP)"
-      - key: VITE_GFORM_ID
+      - key: VITE_RSVP_ENDPOINT
         sync: false
-      - key: VITE_GFORM_ENTRY_NAME
-        sync: false
-      - key: VITE_GFORM_ENTRY_PHONE
-        sync: false
-      - key: VITE_GUEST_COUNT_CSV_URL
+      - key: VITE_GUEST_COUNT_URL
         sync: false
     headers:
       - path: /assets/*

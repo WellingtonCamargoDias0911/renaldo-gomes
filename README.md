@@ -23,66 +23,81 @@ npm run preview  # testa o build localmente
 - [ ] Rastreamento: preencha `VITE_GTM_ID` **ou** `VITE_GA4_ID`, e `VITE_META_PIXEL_ID` (opcional). Só carregam depois que o visitante aceita o aviso de cookies (LGPD).
 - [ ] Google Search Console: adicione o site e envie `/sitemap.xml`.
 - [ ] Teste o cartão de compartilhamento: <https://developers.facebook.com/tools/debug/> (também limpa o cache do WhatsApp).
-- [ ] Se for usar `/convidados`: configure o Google Forms (seção abaixo) e preencha `src/data/event.ts`.
+- [ ] Se for usar `/convidados`: suba o endpoint (seção abaixo), preencha `VITE_RSVP_ENDPOINT` e `src/data/event.ts`.
 
 ## Lista de convidados (RSVP) — `/convidados`
 
 Página separada (mesmo tema e efeitos do site) com um formulário de **nome + WhatsApp**
-para confirmar presença no lançamento. Não existe servidor/banco de dados próprio aqui —
-as respostas vão direto para um **Google Forms** que você cria e controla. Isso responde a
-pergunta "onde vou guardar a lista": ela fica guardada automaticamente no **Google
-(Forms + Sheets)**, exatamente como qualquer outro Google Forms que você já tenha usado —
-e é lá que você abre para ver os nomes, telefones e **quantas pessoas confirmaram** (a aba
-"Respostas" já mostra o total, com gráfico, sem precisar de nada técnico).
+para confirmar presença no lançamento. O site continua sendo só HTML/JS/CSS (sem backend
+próprio) — ao confirmar, o navegador da pessoa faz uma requisição HTTP direto para o
+**seu servidor** (o mesmo domínio que já recebe a compra do livro, `hub.grafocapital.com.br`,
+ou qualquer outro que vocês controlem). É lá que a lista fica guardada e é lá que vocês
+contam quantas pessoas confirmaram — este README descreve exatamente o que o site envia,
+para o time implementar o endpoint que recebe.
 
-### 1. Crie o formulário (uma vez)
-1. Acesse [forms.google.com](https://forms.google.com) → **Formulário em branco**.
-2. Crie exatamente duas perguntas, do tipo **Resposta curta**:
-   - **Nome completo**
-   - **WhatsApp**
-3. (Opcional) Em **Respostas** → ícone verde do Sheets → **Criar planilha**, para ter os
-   dados também numa planilha do Google Sheets (fica ligada ao formulário automaticamente).
+### O que o site envia
+**`POST` para a URL em `VITE_RSVP_ENDPOINT`**, corpo em JSON:
 
-### 2. Pegue os IDs para conectar ao site
-No formulário (modo de edição), clique no menu **⋮** (três pontinhos, canto superior
-direito) → **Obter link para preenchimento prévio**. Preencha qualquer coisa nos dois
-campos (ex.: "Teste" e "41999999999"), clique em **Obter link** e copie o link gerado.
-Ele se parece com isto:
-
-```
-https://docs.google.com/forms/d/e/1FAIpQLSc_ALGO_LONGO/viewform?usp=pp_url&entry.111222333=Teste&entry.444555666=41999999999
+```json
+{
+  "name": "Maria Silva",
+  "phone": "41988887777",
+  "event": "Lançamento do livro",
+  "confirmedAt": "2026-10-16T22:14:03.000Z",
+  "source": "landing-convidados",
+  "utm": { "utm_source": "whatsapp", "utm_medium": "share" }
+}
 ```
 
-Dessa URL, copie três pedaços para o `.env` (ou nas variáveis do Render):
+- `phone` já vem só com dígitos (DDD + número, sem máscara).
+- `confirmedAt` é a data/hora UTC do envio, em ISO 8601.
+- `utm` traz a origem de quem clicou no link (campanha, rede social etc.) quando existir —
+  pode vir como objeto vazio `{}`.
+- O cabeçalho vai como `Content-Type: text/plain` **de propósito**, mesmo o corpo sendo
+  JSON — isso faz o navegador pular o preflight (`OPTIONS`) do CORS, então o servidor só
+  precisa tratar o `POST` em si. Ele pode (e deve) ignorar o Content-Type declarado e fazer
+  `JSON.parse`/`json_decode` do corpo normalmente.
 
-| Na URL | Variável |
-|---|---|
-| o trecho entre `/d/e/` e `/viewform` (`1FAIpQLSc_ALGO_LONGO`) | `VITE_GFORM_ID` |
-| o número depois de `entry.` **no campo Nome** (`111222333`) | `VITE_GFORM_ENTRY_NAME` |
-| o número depois de `entry.` **no campo WhatsApp** (`444555666`) | `VITE_GFORM_ENTRY_PHONE` |
+### O que o servidor precisa devolver
+- **Sucesso:** qualquer status **2xx** (o corpo da resposta não é lido, pode ser vazio).
+- **Falha:** qualquer outro status — a página mostra um aviso de erro para quem está
+  confirmando.
+- **CORS, obrigatório:** a resposta precisa incluir o cabeçalho
+  `Access-Control-Allow-Origin: https://SEU-SITE` (o domínio deste site; `*` também funciona,
+  mas é menos seguro). Sem esse cabeçalho, o navegador descarta a resposta mesmo que o
+  servidor tenha salvo os dados — e a página mostraria erro mesmo com tudo certo do lado de
+  lá. Como não há preflight (ver acima), **esse é o único cabeçalho de CORS necessário.**
 
-Confira qual `entry.` é qual olhando a ordem em que você preencheu — "Teste" é sempre o
-Nome, o número é sempre o WhatsApp. Salve o `.env`, rode `npm run build` (ou faça o deploy
-no Render) e o formulário do site já envia para o seu Google Forms.
+### Exemplo mínimo de servidor
+Node/Express:
+```js
+app.post('/rsvp', express.text({ type: '*/*' }), (req, res) => {
+  const data = JSON.parse(req.body) // { name, phone, event, confirmedAt, source, utm }
+  // ... salvar `data` onde preferir (banco, planilha, CRM) ...
+  res.header('Access-Control-Allow-Origin', 'https://SEU-SITE').sendStatus(200)
+})
+```
+PHP:
+```php
+header('Access-Control-Allow-Origin: https://SEU-SITE');
+$data = json_decode(file_get_contents('php://input'), true); // name, phone, event, confirmedAt, source, utm
+// ... salvar $data ...
+http_response_code(200);
+```
 
-### 3. (Opcional) Mostrar "X confirmados" na página
-Sem isso o site funciona normalmente — você só não vê o contador ao vivo na página (mas
-continua vendo o total real a qualquer momento na aba "Respostas" do formulário). Para
-ativar o contador:
-1. Abra a planilha de respostas (Sheets) → **Arquivo → Compartilhar → Publicar na web**.
-2. Selecione a aba de respostas e o formato **Valores separados por vírgula (.csv)** →
-   **Publicar**.
-3. Copie o link gerado em `VITE_GUEST_COUNT_CSV_URL`.
+### (Opcional) Mostrar "X confirmados" na página
+Se o servidor também expuser um **`GET`** que devolva `{"count": 42}` (com o mesmo cabeçalho
+de CORS acima), preencha a URL dele em `VITE_GUEST_COUNT_URL` e o contador aparece sozinho
+na página. Sem essa variável, o contador simplesmente não aparece — o resto funciona normal.
 
 ### Limitações (honestas)
-- Não existe confirmação 100% garantida de que a linha foi salva no Google — o navegador
-  não permite ler a resposta de outro site. Na prática é bem confiável; se algo falhar de
-  verdade (sem internet, por exemplo), a página mostra um aviso e, se você preencher
-  `EVENT.contactWhatsapp` em `src/data/event.ts`, oferece confirmar direto pelo seu WhatsApp.
-- Não há deduplicação automática: se alguém confirmar duas vezes com nomes digitados
-  diferente, aparecem duas linhas — basta olhar a planilha de vez em quando.
+- Não há deduplicação automática: se alguém confirmar duas vezes, vão existir dois envios —
+  trate isso do lado do servidor se for importante (ex.: por telefone).
 - A página guarda no navegador da pessoa que ela já confirmou (não é à prova de reinstalar
   o navegador/trocar de aparelho), só para evitar reenvio sem querer ao voltar na página.
+- Se o envio falhar (servidor fora do ar, CORS mal configurado etc.), a página avisa e,
+  se você preencher `EVENT.contactWhatsapp` em `src/data/event.ts`, oferece confirmar direto
+  pelo seu WhatsApp como alternativa.
 - `/convidados` é marcada como privada (`noindex`, fora do `sitemap.xml`): só quem recebe
   o link direto acessa; não aparece em busca do Google.
 
