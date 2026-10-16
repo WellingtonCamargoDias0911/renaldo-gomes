@@ -66,10 +66,13 @@ export async function submitRsvp(name: string, phone: string): Promise<SubmitRes
   const digits = onlyDigits(phone)
   const body = new URLSearchParams({ [ENTRY_NAME]: trimmedName, [ENTRY_PHONE]: digits })
   try {
+    // Sem header de Content-Type manual: o fetch já define
+    // "application/x-www-form-urlencoded;charset=UTF-8" sozinho ao ver um URLSearchParams
+    // como body — exatamente como um <form> comum faria. Definir o header na mão aqui fazia
+    // o Google aceitar a requisição (criava a linha) mas descartar os valores dos campos.
     await fetch(`https://docs.google.com/forms/d/e/${GFORM_ID}/formResponse`, {
       method: 'POST',
       mode: 'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     })
   } catch {

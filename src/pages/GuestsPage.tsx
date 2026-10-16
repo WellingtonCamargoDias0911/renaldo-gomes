@@ -133,7 +133,7 @@ export function GuestsPage() {
                     <CheckBadge />
                     <h2 className="h2 invite__success-title">Presença confirmada!</h2>
                     <p>
-                      {saved?.name ?? name}, você está na lista. Guarde esta página — os detalhes do encontro
+                      {name || saved?.name}, você está na lista. Guarde esta página — os detalhes do encontro
                       aparecem aqui em cima assim que forem confirmados.
                     </p>
                     {calUrl && (

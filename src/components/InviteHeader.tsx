@@ -15,7 +15,7 @@ export function InviteHeader() {
 
   return (
     <motion.header
-      className={`header ${solid ? 'header--solid' : ''}`}
+      className={`header invite-header ${solid ? 'header--solid' : ''}`}
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.2 }}
@@ -24,7 +24,7 @@ export function InviteHeader() {
         <a href="/" className="logo" aria-label="Renaldo Gomes — início">
           <Logo size={38} />
         </a>
-        <a className="invite__back" href="/">Conheça o livro</a>
+        <a className="invite__back" href="/">O livro</a>
       </div>
     </motion.header>
   )

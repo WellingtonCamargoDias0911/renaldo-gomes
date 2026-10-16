@@ -7,13 +7,11 @@ import { BOOK } from '../config'
  */
 export const EVENT = {
   name: 'Lançamento do livro',
-  // TODO: data e hora reais, fuso de Brasília. Ex.: '2026-11-20T19:00:00-03:00'
-  dateISO: null as string | null,
+  dateISO: '2026-10-30T19:00:00-03:00' as string | null,
   durationHours: 3,
-  // TODO: nome e endereço do local
-  venueName: '',
-  address: '',
-  mapsUrl: '',
+  venueName: 'Livraria da Vila — Shopping Pátio Batel' as string,
+  address: 'Av. do Batel, 1868 – Batel, Curitiba – PR, 80420-090',
+  mapsUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Livraria da Vila, Av. do Batel, 1868, Batel, Curitiba - PR, 80420-090'),
   // TODO: traje, se houver (ex.: 'Traje esporte fino')
   dressCode: '',
   // WhatsApp da organização, só dígitos com DDI 55 (ex.: 5541999998888) — usado se o envio falhar
