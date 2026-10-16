@@ -54,16 +54,7 @@ export const isValidName = (v: string) => v.trim().length >= 3 && v.trim().inclu
 export const isValidPhone = (v: string) => onlyDigits(v).length >= 10
 
 /** Formato exato esperado pelo webhook: nome + telefone (e os apelidos name/whatsapp, de brinde). */
-interface RsvpPayload {
-  nome: string
-  telefone: string
-  name: string
-  whatsapp: string
-  event: string
-  confirmedAt: string
-  source: string
-  utm: Record<string, string>
-}
+type RsvpPayload = Record<string, string>
 
 function buildPayload(name: string, phone: string): RsvpPayload {
   const nome = name.trim()
@@ -73,19 +64,26 @@ function buildPayload(name: string, phone: string): RsvpPayload {
     event: EVENT.name,
     confirmedAt: new Date().toISOString(),
     source: 'landing-convidados',
-    utm: attribution(),
+    ...attribution(), // utm_source, utm_medium... direto no payload (sem aninhar)
   }
 }
 
-/** Uma tentativa de envio, com tempo limite. Nunca lança — só diz se deu certo. */
+/**
+ * Uma tentativa de envio, com tempo limite. Nunca lança — só diz se deu certo.
+ *
+ * Vai como `application/x-www-form-urlencoded` (sem Content-Type manual: o fetch define
+ * sozinho ao ver um URLSearchParams, exatamente como um <form> comum faria) em vez de JSON.
+ * Isso faz o navegador tratar a requisição como "simples" e pular o preflight (OPTIONS) do
+ * CORS — necessário porque o webhook responde ao POST mas não tem uma rota OPTIONS própria,
+ * então qualquer requisição que dispare preflight (como JSON) é bloqueada antes de sair.
+ */
 async function attemptSend(payload: RsvpPayload, timeoutMs: number): Promise<boolean> {
   const ctrl = new AbortController()
   const id = window.setTimeout(() => ctrl.abort(), timeoutMs)
   try {
     const res = await fetch(RSVP_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: new URLSearchParams(payload),
       signal: ctrl.signal,
     })
     return res.ok

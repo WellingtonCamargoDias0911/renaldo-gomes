@@ -34,25 +34,28 @@ mesmo sistema que já recebe a compra do livro. É lá que a lista fica guardada
 vocês acompanham quem confirmou (o próprio webhook já evita duplicata pelo telefone).
 
 ### O que o site envia
-**`POST` para `VITE_RSVP_ENDPOINT`**, corpo em JSON:
+**`POST` para `VITE_RSVP_ENDPOINT`**, corpo como **formulário** (`application/x-www-form-urlencoded`,
+igual um `<form>` comum — não é JSON), com estes campos:
 
-```json
-{
-  "nome": "Maria Silva",
-  "telefone": "41988887777",
-  "name": "Maria Silva",
-  "whatsapp": "41988887777",
-  "event": "Lançamento do livro",
-  "confirmedAt": "2026-10-16T22:14:03.000Z",
-  "source": "landing-convidados",
-  "utm": { "utm_source": "whatsapp", "utm_medium": "share" }
-}
+```
+nome=Maria+Silva&telefone=41988887777&name=Maria+Silva&whatsapp=41988887777
+&event=Lan%C3%A7amento+do+livro&confirmedAt=2026-10-16T22%3A14%3A03.000Z
+&source=landing-convidados&utm_source=whatsapp&utm_medium=share
 ```
 
 `nome`/`telefone` (e os apelidos `name`/`whatsapp`, que o webhook também aceita) são os
 campos obrigatórios; `telefone`/`whatsapp` já vêm só com dígitos (DDD + número, sem
-máscara). Os demais campos (`event`, `confirmedAt`, `utm`...) são contexto extra — se o
-webhook não usar, ele simplesmente ignora.
+máscara). Os demais campos (`event`, `confirmedAt`, `utm_source`...) são contexto extra —
+se o webhook não usar, ele simplesmente ignora.
+
+**Por que formulário e não JSON:** o webhook responde ao `POST` com o cabeçalho de CORS
+certo, mas não tem uma rota para `OPTIONS` — e o navegador manda um `OPTIONS` (chamado de
+"preflight") antes de qualquer `POST` com corpo em JSON, pra perguntar se pode enviar.
+Sem resposta ao `OPTIONS`, o navegador bloqueia e o `POST` nem sai. Formulário
+(`x-www-form-urlencoded`) é tratado pelo navegador como "requisição simples" e pula essa
+etapa — funciona sem precisar mexer no backend. Se um dia o webhook ganhar uma rota
+`OPTIONS` que devolva `Access-Control-Allow-Origin`/`-Methods`/`-Headers`, dá pra voltar a
+enviar em JSON — me avisem que eu ajusto.
 
 ### Experiência sem erro para quem confirma (pedido explícito)
 A pessoa confirmando **nunca vê uma mensagem de erro técnico**. A tela de "Presença
